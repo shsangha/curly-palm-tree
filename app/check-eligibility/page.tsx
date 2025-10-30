@@ -64,6 +64,55 @@ export default function CheckEligibility() {
     }
   };
 
+  // Reset to initial state
+  const resetEligibilityCheck = () => {
+    playClickSound();
+    setIsConnected(false);
+    setIsEligible(null);
+    setWalletAddress(null);
+    setError(null);
+  };
+
+  // Listen for account changes in MetaMask
+  useEffect(() => {
+    if (typeof window.ethereum === "undefined") return;
+
+    const handleAccountsChanged = (accounts: unknown) => {
+      const accountArray = accounts as string[];
+      if (accountArray.length === 0) {
+        // User disconnected their wallet
+        resetEligibilityCheck();
+      } else if (accountArray[0] !== walletAddress) {
+        // User switched to a different account
+        playClickSound();
+        setWalletAddress(accountArray[0] as Address);
+        setIsEligible(null); // Reset eligibility to trigger re-check
+      }
+    };
+
+    window.ethereum.on?.("accountsChanged", handleAccountsChanged);
+
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener?.("accountsChanged", handleAccountsChanged);
+      }
+    };
+  }, [walletAddress]);
+
+  // Handle backspace or escape key to reset after check is complete
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only allow reset if check is complete (not checking and connected)
+      if ((e.key === "Backspace" || e.key === "Escape") && isConnected && !isChecking && isEligible !== null) {
+        e.preventDefault();
+        resetEligibilityCheck();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isConnected, isChecking, isEligible]);
+
   // Check eligibility when wallet connects
   useEffect(() => {
     const checkEligibility = async () => {
@@ -79,13 +128,13 @@ export default function CheckEligibility() {
       setPendingAudio(audio);
 
       try {
-        // Call the smart contract to check balance
-        // Token ID 0 is used as the eligibility check
+        // Call the smart contract to check total balance across all token IDs
+        // Using ownerBalance instead of balanceOf since each user gets a unique token ID
         const balance = await publicClient.readContract({
           address: MENACES_CONTRACT_ADDRESS,
           abi: MENACES_CONTRACT_ABI,
-          functionName: "balanceOf",
-          args: [walletAddress, BigInt(0)],
+          functionName: "ownerBalance",
+          args: [walletAddress],
         });
 
         // User is eligible if they have at least 1 token
@@ -161,6 +210,26 @@ export default function CheckEligibility() {
             Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
           </div>
         )}
+
+        {/* Purchase Links */}
+        <div className="flex gap-4 mt-4">
+          <a
+            href="https://opensea.io/item/ethereum/0x5394603d355482c126f7cf3603e419b67b31b76e"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white hover:text-gray-300 transition-colors underline text-base"
+          >
+            PURCHASE SUDOPASS ON OPENSEA
+          </a>
+          <a
+            href="https://magiceden.io/collections/ethereum/0x5394603d355482c126f7cf3603e419b67b31b76e"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white hover:text-gray-300 transition-colors underline text-base"
+          >
+            PURCHASE SUDOPASS ON MAGICEDEN
+          </a>
+        </div>
       </div>
     </div>
   );

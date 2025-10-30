@@ -11,6 +11,20 @@ export default function Menaces() {
   // Check if both inputs have values
   const canSubmit = textInput.trim().length > 0 && hasDrawing;
 
+  // Disable scrolling on this page
+  useEffect(() => {
+    // Save the original overflow style
+    const originalOverflow = document.body.style.overflow;
+
+    // Disable scrolling
+    document.body.style.overflow = "hidden";
+
+    // Re-enable scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -47,6 +61,9 @@ export default function Menaces() {
   const startDrawing = (
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
   ) => {
+    // Prevent scrolling while drawing
+    e.preventDefault();
+
     setIsDrawing(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -68,6 +85,9 @@ export default function Menaces() {
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
   ) => {
     if (!isDrawing) return;
+
+    // Prevent scrolling while drawing
+    e.preventDefault();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -123,7 +143,7 @@ export default function Menaces() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center relative">
       <div className="relative w-[350px] h-[350px] md:w-[500px] md:h-[500px] lg:w-[700px] lg:h-[700px]">
         {/* Background Image */}
         <img
@@ -147,7 +167,7 @@ export default function Menaces() {
         {/* Drawing Canvas Area */}
         <canvas
           ref={canvasRef}
-          className="absolute top-[175px] left-[97px] w-[85px] h-[85px] md:top-[251px] md:left-[139px] md:w-[121px] md:h-[121px] lg:top-[351px] lg:left-[194px] lg:w-[169px] lg:h-[169px] cursor-crosshair"
+          className="absolute top-[175px] left-[97px] w-[85px] h-[85px] md:top-[251px] md:left-[139px] md:w-[121px] md:h-[121px] lg:top-[351px] lg:left-[194px] lg:w-[169px] lg:h-[169px] cursor-crosshair touch-none"
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
@@ -163,6 +183,13 @@ export default function Menaces() {
           className="absolute top-[195px] left-[195px] w-[50px] h-[50px] md:top-[280px] md:left-[280px] md:w-[70px] md:h-[70px] lg:top-[395px] lg:left-[390px] lg:w-[100px] lg:h-[100px] bg-transparent border-0 cursor-pointer rounded-full"
           aria-label="Submit"
         />
+      </div>
+
+      {/* Coming Soon Overlay */}
+      <div className="fixed inset-0 bg-black opacity-70 flex items-center justify-center z-50 pointer-events-auto px-4">
+        <h1 className="text-[#c0c0c0] text-4xl md:text-6xl lg:text-7xl font-bold text-center">
+          Project<br />launching<br />soon
+        </h1>
       </div>
     </div>
   );
